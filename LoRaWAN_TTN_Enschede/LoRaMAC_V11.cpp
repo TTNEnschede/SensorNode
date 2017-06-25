@@ -81,7 +81,7 @@ unsigned char LORA_Cycle(unsigned char *Data_Tx, unsigned char *Data_Rx, unsigne
   unsigned long time;
   unsigned char strt;
 
-	unsigned char Receive_Delay_2 = 17;
+	unsigned char Receive_Delay_2 = 9;
 
 	LORA_Send_Data(Data_Tx, Data_Length_Tx, Frame_Counter_Up);
 
