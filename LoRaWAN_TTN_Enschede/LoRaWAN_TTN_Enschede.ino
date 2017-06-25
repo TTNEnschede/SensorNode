@@ -174,9 +174,7 @@ void setup()
     while (1);
   }
 
-
   Serial.print("Program Started\n");
-    
   Serial.println();
 }
 
@@ -198,40 +196,39 @@ void loop()
   RFM_Init();
   delay(1000);
 
-    // Here the sensor information should be retrieved 
-    Serial.print(F("Temperature = "));
-    Serial.print(bmp.readTemperature());
-    Serial.println(" *C");
-    
-    Serial.print(F("Pressure = "));
-    Serial.print(bmp.readPressure() / 100.0);
-    Serial.println(" hPa");
+  // Here the sensor information should be retrieved 
+  Serial.print(F("Temperature = "));
+  Serial.print(bmp.readTemperature());
+  Serial.println(" *C");
   
+  Serial.print(F("Pressure = "));
+  Serial.print(bmp.readPressure() / 100.0);
+  Serial.println(" hPa");
+
   Serial.println();
-   
-    //Construct data 
-//    sprintf(msg,"Hello world!");
-//    sprintf(msg,"%d.%02d C %ld.%02ld hPa", (int)bmp.readTemperature(), (int)(bmp.readTemperature()*100)%100, (long)bmp.readPressure()/100, (long)bmp.readPressure()%100);
-//    memcpy(Data_Tx, msg, strlen(msg));
-//    Data_Length_Tx = strlen(msg);
+ 
+  //Construct data 
+  lpp.reset();                           // clear the buffer
+  lpp.addTemperature(1, bmp.readTemperature());           // on channel 1, add temperature, value 22.5°C
+  lpp.addBarometricPressure(2, (bmp.readPressure() / 100.0)); // channel 2, pressure
 
-//    Serial.print("Loop: Message content:");
-//    Serial.println(msg);
+  Serial.println("Loop: Sending data");
+  Data_Length_Rx = LORA_Cycle(lpp.getBuffer(), Data_Rx, lpp.getSize());
+  FC = FC + 1;
 
-    lpp.reset();                           // clear the buffer
-    lpp.addTemperature(1, bmp.readTemperature());           // on channel 1, add temperature, value 22.5°C
-    lpp.addBarometricPressure(2, (bmp.readPressure() / 100.0)); // channel 2, pressure
-//    lpp.addGPS(3, 52.37365, 4.88650, 2);   // channel 3, coordinates
-
-//    ttn.sendBytes(lpp.getBuffer(), lpp.getSize());
-
-    Serial.println("Loop: Sending data");
-//    Data_Length_Rx = LORA_Cycle(Data_Tx, Data_Rx, Data_Length_Tx);
-    Data_Length_Rx = LORA_Cycle(lpp.getBuffer(), Data_Rx, lpp.getSize());
-    FC = FC + 1;
-    
-    //Delay of 1 minute 
-    Serial.println("Loop: Start waiting loop (1 minutes)");
-    delay(60000);
-    Serial.println("---");
+  // let's see the downlink payload.
+  Serial.print("Rx (length): ");
+  Serial.println(Data_Length_Rx);
+  if (Data_Length_Rx > 0) {
+    Serial.print("Rx (data): ");
+    for (int i = 0; i < Data_Length_Rx; i++){
+      Serial.print(Data_Rx[i]);
+    }
+  }
+  Serial.println();
+  
+  //Delay of 1 minute 
+  Serial.println("Loop: Start waiting loop (1 minutes)");
+  delay(60000);
+  Serial.println("---");
 }
