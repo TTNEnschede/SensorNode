@@ -216,16 +216,21 @@ void loop()
   Data_Length_Rx = LORA_Cycle(lpp.getBuffer(), Data_Rx, lpp.getSize());
   FC = FC + 1;
 
-  // let's see the downlink payload.
+  // Let's see the downlink payload.
   Serial.print("Rx (length): ");
   Serial.println(Data_Length_Rx);
   if (Data_Length_Rx > 0) {
+    char tmp[Data_Length_Rx];
     Serial.print("Rx (data): ");
     for (int i = 0; i < Data_Length_Rx; i++){
-      Serial.print(Data_Rx[i]);
+      // Print data in HEX format.
+      sprintf(tmp, "0x%.2X",Data_Rx[i]); 
+      Serial.print(tmp); 
+      Serial.print(" ");
     }
   }
   Serial.println();
+
   
   //Delay of 1 minute 
   Serial.println("Loop: Start waiting loop (1 minutes)");
