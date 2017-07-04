@@ -30,5 +30,6 @@ The Nexus board is fitted with an ATMEGA328P and a RFM95 module.To adapt this co
 - Male jumper wire as an antenna
 - (optional) BMP280 temperature sensor
 
-Impression of finished product:
+*Impression of finished product:*
+
 ![Basic LoRa node](https://github.com/TTNEnschede/SensorNode/blob/master/Basic-LoRa-node.jpg)
