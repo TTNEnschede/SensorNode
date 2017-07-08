@@ -109,6 +109,7 @@ void RFM_Init()
         }
 
   RFM_Write(0x1F,0x25); // Original value
+//  RFM_Write(0x1F,0xFF); // Longer value
     
   //Preamble length set to 8 symbols
   //0x0008 + 4 = 12
@@ -243,6 +244,8 @@ void RFM_Send_Package(unsigned char *RFM_Tx_Package, unsigned char Package_Lengt
 
 message_t RFM_Receive()
 {
+  unsigned long time = millis();
+  
   message_t Message_Status = NO_MESSAGE;
 
   unsigned char RFM_Interrupt;
@@ -267,10 +270,14 @@ message_t RFM_Receive()
   //Switch RFM to Single reception
   RFM_Write(0x01,0x86);
 
+  //Switch RFM to continuous reception
+//  RFM_Write(0x01,0x85);
+
   //Wait on mode ready
   while(digitalRead(DIO5) == LOW)
   {
   }
+  unsigned long stop_1 = millis();
 
   //Wait until RxDone or Timeout
   //Wait until timeout or RxDone interrupt
@@ -278,6 +285,15 @@ message_t RFM_Receive()
   {
   }
 
+  unsigned long stop_2 = millis();
+  unsigned long diff_1 = stop_1 - time;
+  unsigned long diff_2 = stop_2 - time;
+  Serial.println("");
+//  Serial.print("Diff1: ");
+//  Serial.println(diff_1);
+  Serial.print(" Diff2: ");
+  Serial.println(diff_2);
+  
   //Get interrupt register
   RFM_Interrupt = RFM_Read(0x12);
 

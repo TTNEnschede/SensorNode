@@ -73,15 +73,49 @@ extern unsigned char DevAddr[4];
 * Returns     : Number of bytes received
 *****************************************************************************************
 */
+unsigned char LORA_Cycle(unsigned char *Data_Tx, unsigned char *Data_Rx, unsigned char Data_Length_Tx, HardwareSerial& printer)
+{
+  printer.write("[");
+  unsigned char Data_Length_Rx;
+  unsigned char i;
+
+  unsigned long time;
+  unsigned char strt;
+
+  unsigned char Receive_Delay_2 = 9;
+
+  LORA_Send_Data(Data_Tx, Data_Length_Tx, Frame_Counter_Up);
+
+  //Raise frame counter
+  Frame_Counter_Up++;
+
+  
+  printer.write("-delay");
+//  int start = millis();
+  for(i = 0; i <= Receive_Delay_2; i ++ )
+  {
+    WaitLoop(100);
+  }
+  
+//  int stop = millis();
+//  int diff = stop - start;
+  printer.write("-");
+  Data_Length_Rx = LORA_Receive_Data(Data_Rx, printer);
+
+  printer.write("]\n");
+
+  return Data_Length_Rx;
+}
 unsigned char LORA_Cycle(unsigned char *Data_Tx, unsigned char *Data_Rx, unsigned char Data_Length_Tx)
 {
+
 	unsigned char Data_Length_Rx;
   unsigned char i;
 
   unsigned long time;
   unsigned char strt;
 
-	unsigned char Receive_Delay_2 = 9;
+	unsigned char Receive_Delay_2 = 17;
 
 	LORA_Send_Data(Data_Tx, Data_Length_Tx, Frame_Counter_Up);
 
@@ -185,6 +219,136 @@ void LORA_Send_Data(unsigned char *Data, unsigned char Data_Length, unsigned int
 * Returns     : Number of bytes received
 *****************************************************************************************
 */
+unsigned char LORA_Receive_Data(unsigned char *Data, HardwareSerial& printer) {
+  unsigned char i;
+
+  unsigned char Data_Length = 0x00;
+
+  unsigned char RFM_Data[64];
+  unsigned char RFM_Package_Length = 0x00;
+  unsigned char RFM_Interrupt;
+
+  unsigned char MIC[4];
+  unsigned char MIC_Check;
+
+  unsigned int Frame_Counter_Down;
+  unsigned char Frame_Control;
+  unsigned char Frame_Options_Length;
+
+  unsigned char Data_Location;
+
+  unsigned char Direction;
+
+  message_t Message_Status = NO_MESSAGE;
+
+  Message_Status = RFM_Receive();
+  
+  printer.write("-");
+  if(Message_Status == NO_MESSAGE){
+    printer.write("No message");
+  }
+  if(Message_Status == CRC_OK){
+    printer.write("CRC_OK");
+  }
+  if(Message_Status == MIC_OK){
+    printer.write("MIC_OK");
+  }
+  if(Message_Status == MESSAGE_DONE){
+    printer.write("MESSAGE_DONE");
+  }
+  if(Message_Status == TIMEOUT){
+    printer.write("TIMEOUT");
+  }
+  if(Message_Status == WRONG_MESSAGE){
+    printer.write("WRONG_MESSAGE");
+  }
+  printer.write("-");
+  
+  //if CRC ok breakdown package
+  if(Message_Status == CRC_OK)
+  {
+    //Get Message
+    RFM_Package_Length = RFM_Get_Package(RFM_Data);
+
+    //Set Direction for downlink frame
+    Direction = 0x01;
+
+    //Get frame counter
+    Frame_Counter_Down = RFM_Data[7];
+    Frame_Counter_Down = (Frame_Counter_Down << 8) + RFM_Data[6];
+
+    Calculate_MIC(RFM_Data,MIC,(RFM_Package_Length - 4),Frame_Counter_Down,Direction);
+
+    MIC_Check = 0x00;
+
+    for(i = 0; i < 4; i++)
+    {
+      if(RFM_Data[(RFM_Package_Length - 4) + i] == MIC[i])
+      {
+        MIC_Check++;
+      }
+    }
+
+    if(MIC_Check == 0x04)
+    {
+      Message_Status = MIC_OK;
+    }
+    else
+    {
+      Message_Status = WRONG_MESSAGE;
+    }
+  }
+
+  //if MIC is OK then decrypt the data
+  if(Message_Status == MIC_OK)
+  {
+    Data_Location = 8;
+
+    //Get frame control
+    Frame_Control = RFM_Data[5];
+
+    //Get length of frame options field
+    Frame_Options_Length = (Frame_Control & 0x0F);
+
+    //Add length of frame options field to data location
+    Data_Location = Data_Location + Frame_Options_Length;
+
+    //Check if ther is data in the package
+    if(RFM_Package_Length == (Data_Location + 4))
+    {
+      Data_Length = 0x00;
+    }
+    else
+    {
+      Data_Length = (RFM_Package_Length - Data_Location -1 -4);
+      Data_Location = (Data_Location + 1);
+    }
+
+    //Decrypt the data
+    if(Data_Length != 0x00)
+    {
+      Encrypt_Payload(&RFM_Data[Data_Location], Data_Length, Frame_Counter_Down, Direction);
+
+      Message_Status = MESSAGE_DONE;
+    }
+  }
+
+  if(Message_Status == MESSAGE_DONE)
+  {
+    for(i = 0; i < Data_Length; i++)
+    {
+      Data[i] = RFM_Data[Data_Location + i];
+    }
+  }
+
+  if(Message_Status == WRONG_MESSAGE)
+  {
+    Data_Length = 0x00;
+  }
+
+  return Data_Length;
+}
+  
 unsigned char LORA_Receive_Data(unsigned char *Data)
 {
 	unsigned char i;
@@ -210,8 +374,8 @@ unsigned char LORA_Receive_Data(unsigned char *Data)
 
 
 	Message_Status = RFM_Receive();
- 
   
+ 
 	//if CRC ok breakdown package
 	if(Message_Status == CRC_OK)
 	{

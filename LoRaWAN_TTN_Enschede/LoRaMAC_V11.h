@@ -42,7 +42,10 @@
 * FUNCTION PROTOTYPES
 *****************************************************************************************
 */
+#include <HardwareSerial.h>
 
+unsigned char LORA_Cycle(unsigned char *Data_Tx, unsigned char *Data_Rx, unsigned char Data_Length_Tx, HardwareSerial& printer);
+unsigned char LORA_Receive_Data(unsigned char *Data, HardwareSerial& printer);
 unsigned char LORA_Cycle(unsigned char *Data_Tx, unsigned char *Data_Rx, unsigned char Data_Length_Tx);
 void LORA_Send_Data(unsigned char *Data, unsigned char Data_Length, unsigned int Frame_Counter_Up);
 unsigned char LORA_Receive_Data(unsigned char *Data);

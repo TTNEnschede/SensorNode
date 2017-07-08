@@ -144,6 +144,7 @@ void setup()
 {
   //Initialize the UART
   Serial.begin(115200);
+  delay(100);
   Serial.println("---");
   Serial.println("What: TTN Enschede - LoRa node bouwavond / 'hello world'");
   Serial.println("Setup: Initialized serial port");
@@ -174,7 +175,9 @@ void setup()
     while (1);
   }
 
+
   Serial.print("Program Started\n");
+    
   Serial.println();
 }
 
@@ -194,46 +197,40 @@ void loop()
   //Initialize RFM module
   Serial.println("Loop: Initializing RFM95");
   RFM_Init();
+  
   delay(1000);
 
-  // Here the sensor information should be retrieved 
-  Serial.print(F("Temperature = "));
-  Serial.print(bmp.readTemperature());
-  Serial.println(" *C");
+    // Here the sensor information should be retrieved 
+    Serial.print(F("Temperature = "));
+    Serial.print(bmp.readTemperature());
+    Serial.println(" *C");
+    
+    Serial.print(F("Pressure = "));
+    Serial.print(bmp.readPressure() / 100.0);
+    Serial.println(" hPa");
   
-  Serial.print(F("Pressure = "));
-  Serial.print(bmp.readPressure() / 100.0);
-  Serial.println(" hPa");
+    Serial.println();
+  
+    lpp.reset();                                                // clear the buffer
+    lpp.addTemperature(1, bmp.readTemperature());               // on channel 1, add temperature, value 22.5°C
+    lpp.addBarometricPressure(2, (bmp.readPressure() / 100.0)); // channel 2, pressure
 
-  Serial.println();
- 
-  //Construct data 
-  lpp.reset();                           // clear the buffer
-  lpp.addTemperature(1, bmp.readTemperature());           // on channel 1, add temperature, value 22.5°C
-  lpp.addBarometricPressure(2, (bmp.readPressure() / 100.0)); // channel 2, pressure
+    Serial.println("Loop: Sending data");
+    Data_Length_Rx = LORA_Cycle(lpp.getBuffer(), Data_Rx, lpp.getSize(), Serial);
+    
+    FC = FC + 1;
 
-  Serial.println("Loop: Sending data");
-  Data_Length_Rx = LORA_Cycle(lpp.getBuffer(), Data_Rx, lpp.getSize());
-  FC = FC + 1;
-
-  // Let's see the downlink payload.
-  Serial.print("Rx (length): ");
-  Serial.println(Data_Length_Rx);
-  if (Data_Length_Rx > 0) {
-    char tmp[Data_Length_Rx];
-    Serial.print("Rx (data): ");
+    Serial.print("Rx: ");
     for (int i = 0; i < Data_Length_Rx; i++){
-      // Print data in HEX format.
-      sprintf(tmp, "0x%.2X",Data_Rx[i]); 
-      Serial.print(tmp); 
-      Serial.print(" ");
+      Serial.print(Data_Rx[i]);
     }
-  }
-  Serial.println();
-
-  
-  //Delay of 1 minute 
-  Serial.println("Loop: Start waiting loop (1 minutes)");
-  delay(60000);
-  Serial.println("---");
+    Serial.println();
+    
+    Serial.print("Rx (length): ");
+    Serial.println(Data_Length_Rx);
+    
+    //Delay of 1 minute 
+    Serial.println("Loop: Start waiting loop (1 minutes)");
+    delay(60000);
+    Serial.println("---");
 }
